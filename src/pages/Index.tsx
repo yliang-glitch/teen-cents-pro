@@ -11,7 +11,8 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   BookOpen,
-  Zap
+  Zap,
+  BarChart3
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -205,6 +206,10 @@ const Index = () => {
           <Link to="/" className="flex flex-col items-center gap-1 text-primary">
             <Wallet className="w-6 h-6" />
             <span className="text-xs font-medium">Home</span>
+          </Link>
+          <Link to="/analytics" className="flex flex-col items-center gap-1 text-muted-foreground hover:text-foreground transition-colors">
+            <BarChart3 className="w-6 h-6" />
+            <span className="text-xs">Analytics</span>
           </Link>
           <Link to="/goals" className="flex flex-col items-center gap-1 text-muted-foreground hover:text-foreground transition-colors">
             <Target className="w-6 h-6" />
