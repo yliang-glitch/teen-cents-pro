@@ -1,11 +1,13 @@
 import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Award, Zap, TrendingUp, Target, Star, Trophy, Medal, Crown } from "lucide-react";
+import { ArrowLeft, Award, Zap, TrendingUp, Target, Star, Trophy, Medal, Crown, LogOut } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/hooks/useAuth";
 
 const Profile = () => {
+  const { signOut } = useAuth();
   const profile = {
     name: "Alex",
     level: 5,
@@ -153,10 +155,20 @@ const Profile = () => {
           </Card>
         </div>
 
-        {/* Settings Button */}
-        <Button variant="outline" className="w-full">
-          Account Settings
-        </Button>
+        {/* Settings Buttons */}
+        <div className="space-y-3">
+          <Button variant="outline" className="w-full">
+            Account Settings
+          </Button>
+          <Button 
+            variant="destructive" 
+            className="w-full" 
+            onClick={signOut}
+          >
+            <LogOut className="w-4 h-4 mr-2" />
+            Sign Out
+          </Button>
+        </div>
       </div>
     </div>
   );
