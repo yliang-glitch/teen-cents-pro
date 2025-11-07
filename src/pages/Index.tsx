@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -15,8 +15,12 @@ import {
   BarChart3
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
+  const { user } = useAuth();
+  const [username, setUsername] = useState<string>("User");
   const [stats] = useState({
     totalEarnings: 452.50,
     totalSpent: 187.30,
@@ -26,6 +30,24 @@ const Index = () => {
     xpToNext: 1500,
     streak: 7
   });
+
+  useEffect(() => {
+    const fetchUsername = async () => {
+      if (!user) return;
+      
+      const { data } = await supabase
+        .from("profiles")
+        .select("username")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (data?.username) {
+        setUsername(data.username);
+      }
+    };
+
+    fetchUsername();
+  }, [user]);
 
   const recentTransactions = [
     { id: 1, type: "income", title: "Lawn Mowing", amount: 40, category: "Gig", date: "Today" },
@@ -45,7 +67,7 @@ const Index = () => {
         <div className="max-w-md mx-auto">
           <div className="flex justify-between items-center mb-6">
             <div>
-              <h1 className="text-2xl font-bold">Hey, Alex! 👋</h1>
+              <h1 className="text-2xl font-bold">Hey, {username}! 👋</h1>
               <p className="text-sm opacity-90">Level {stats.level} Financial Rookie</p>
             </div>
             <div className="text-right">
