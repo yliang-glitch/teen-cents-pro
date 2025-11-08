@@ -23,12 +23,28 @@ const profileSchema = z.object({
   bio: z.string().trim().max(200, "Bio must be less than 200 characters").optional(),
 });
 
+const emailSchema = z.object({
+  email: z.string().trim().email("Must be a valid email address"),
+});
+
+const passwordSchema = z.object({
+  newPassword: z.string().min(8, "Password must be at least 8 characters"),
+  confirmPassword: z.string(),
+}).refine((data) => data.newPassword === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
+});
+
 type ProfileFormData = z.infer<typeof profileSchema>;
+type EmailFormData = z.infer<typeof emailSchema>;
+type PasswordFormData = z.infer<typeof passwordSchema>;
 
 const Profile = () => {
   const { signOut, user } = useAuth();
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
+  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [profileData, setProfileData] = useState<{
     username: string | null;
@@ -38,6 +54,15 @@ const Profile = () => {
 
   const { register, handleSubmit, formState: { errors }, reset } = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
+  });
+
+  const { register: registerEmail, handleSubmit: handleEmailSubmit, formState: { errors: emailErrors } } = useForm<EmailFormData>({
+    resolver: zodResolver(emailSchema),
+    defaultValues: { email: user?.email || "" },
+  });
+
+  const { register: registerPassword, handleSubmit: handlePasswordSubmit, formState: { errors: passwordErrors }, reset: resetPassword } = useForm<PasswordFormData>({
+    resolver: zodResolver(passwordSchema),
   });
 
   const profile = {
@@ -123,6 +148,55 @@ const Profile = () => {
     });
 
     setIsDialogOpen(false);
+  };
+
+  const onEmailSubmit = async (data: EmailFormData) => {
+    if (!user) return;
+
+    const { error } = await supabase.auth.updateUser({
+      email: data.email,
+    });
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    toast({
+      title: "Success",
+      description: "Check your email to confirm the change",
+    });
+
+    setIsEmailDialogOpen(false);
+  };
+
+  const onPasswordSubmit = async (data: PasswordFormData) => {
+    if (!user) return;
+
+    const { error } = await supabase.auth.updateUser({
+      password: data.newPassword,
+    });
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    toast({
+      title: "Success",
+      description: "Password updated successfully",
+    });
+
+    resetPassword();
+    setIsPasswordDialogOpen(false);
   };
 
   const badges = [
@@ -334,6 +408,97 @@ const Profile = () => {
               </form>
             </DialogContent>
           </Dialog>
+
+          <Dialog open={isEmailDialogOpen} onOpenChange={setIsEmailDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="w-full">
+                Change Email
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Change Email</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleEmailSubmit(onEmailSubmit)} className="space-y-4">
+                <div>
+                  <Label htmlFor="current-email">Current Email</Label>
+                  <Input
+                    id="current-email"
+                    value={user?.email || ""}
+                    disabled
+                    className="bg-muted"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="new-email">New Email</Label>
+                  <Input
+                    id="new-email"
+                    type="email"
+                    {...registerEmail("email")}
+                    placeholder="Enter new email address"
+                  />
+                  {emailErrors.email && (
+                    <p className="text-sm text-destructive mt-1">{emailErrors.email.message}</p>
+                  )}
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  You'll receive a confirmation email to verify the change.
+                </p>
+                <div className="flex gap-3">
+                  <Button type="submit" className="flex-1">Update Email</Button>
+                  <Button type="button" variant="outline" onClick={() => setIsEmailDialogOpen(false)}>
+                    Cancel
+                  </Button>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="w-full">
+                Change Password
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Change Password</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handlePasswordSubmit(onPasswordSubmit)} className="space-y-4">
+                <div>
+                  <Label htmlFor="new-password">New Password</Label>
+                  <Input
+                    id="new-password"
+                    type="password"
+                    {...registerPassword("newPassword")}
+                    placeholder="Enter new password"
+                  />
+                  {passwordErrors.newPassword && (
+                    <p className="text-sm text-destructive mt-1">{passwordErrors.newPassword.message}</p>
+                  )}
+                </div>
+                <div>
+                  <Label htmlFor="confirm-password">Confirm Password</Label>
+                  <Input
+                    id="confirm-password"
+                    type="password"
+                    {...registerPassword("confirmPassword")}
+                    placeholder="Confirm new password"
+                  />
+                  {passwordErrors.confirmPassword && (
+                    <p className="text-sm text-destructive mt-1">{passwordErrors.confirmPassword.message}</p>
+                  )}
+                </div>
+                <div className="flex gap-3">
+                  <Button type="submit" className="flex-1">Update Password</Button>
+                  <Button type="button" variant="outline" onClick={() => setIsPasswordDialogOpen(false)}>
+                    Cancel
+                  </Button>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
+
           <Button 
             variant="destructive" 
             className="w-full" 
