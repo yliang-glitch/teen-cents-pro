@@ -17,10 +17,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const Index = () => {
   const { user } = useAuth();
   const [username, setUsername] = useState<string>("User");
+  const [loadingProfile, setLoadingProfile] = useState(true);
   const [stats] = useState({
     totalEarnings: 452.50,
     totalSpent: 187.30,
@@ -33,8 +35,12 @@ const Index = () => {
 
   useEffect(() => {
     const fetchUsername = async () => {
-      if (!user) return;
+      if (!user) {
+        setLoadingProfile(false);
+        return;
+      }
       
+      setLoadingProfile(true);
       const { data } = await supabase
         .from("profiles")
         .select("username")
@@ -44,6 +50,7 @@ const Index = () => {
       if (data?.username) {
         setUsername(data.username);
       }
+      setLoadingProfile(false);
     };
 
     fetchUsername();
@@ -67,8 +74,17 @@ const Index = () => {
         <div className="max-w-md mx-auto">
           <div className="flex justify-between items-center mb-6">
             <div>
-              <h1 className="text-2xl font-bold">Hey, {username}! 👋</h1>
-              <p className="text-sm opacity-90">Level {stats.level} Financial Rookie</p>
+              {loadingProfile ? (
+                <>
+                  <Skeleton className="h-8 w-32 mb-2 bg-white/20" />
+                  <Skeleton className="h-4 w-40 bg-white/20" />
+                </>
+              ) : (
+                <>
+                  <h1 className="text-2xl font-bold">Hey, {username}! 👋</h1>
+                  <p className="text-sm opacity-90">Level {stats.level} Financial Rookie</p>
+                </>
+              )}
             </div>
             <div className="text-right">
               <div className="flex items-center gap-2 bg-white/20 px-3 py-1 rounded-full">

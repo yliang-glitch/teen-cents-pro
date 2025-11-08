@@ -15,6 +15,7 @@ import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const profileSchema = z.object({
   username: z.string().trim().min(1, "Username is required").max(50, "Username must be less than 50 characters"),
@@ -28,6 +29,7 @@ const Profile = () => {
   const { signOut, user } = useAuth();
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [loadingProfile, setLoadingProfile] = useState(true);
   const [profileData, setProfileData] = useState<{
     username: string | null;
     avatar_url: string | null;
@@ -52,8 +54,12 @@ const Profile = () => {
 
   useEffect(() => {
     const fetchProfile = async () => {
-      if (!user) return;
+      if (!user) {
+        setLoadingProfile(false);
+        return;
+      }
       
+      setLoadingProfile(true);
       const { data, error } = await supabase
         .from("profiles")
         .select("username, avatar_url, bio")
@@ -66,6 +72,7 @@ const Profile = () => {
           description: "Failed to load profile",
           variant: "destructive",
         });
+        setLoadingProfile(false);
         return;
       }
 
@@ -77,6 +84,7 @@ const Profile = () => {
           bio: data.bio || "",
         });
       }
+      setLoadingProfile(false);
     };
 
     fetchProfile();
@@ -142,17 +150,27 @@ const Profile = () => {
           </Link>
           
           <div className="text-center">
-            <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center text-4xl mx-auto mb-3 overflow-hidden">
-              {profileData?.avatar_url ? (
-                <img src={profileData.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
-              ) : (
-                "👤"
-              )}
-            </div>
-            <h1 className="text-2xl font-bold">{profile.name}</h1>
-            <p className="text-sm opacity-90">Level {profile.level} Financial Rookie</p>
-            {profileData?.bio && (
-              <p className="text-sm opacity-80 mt-2 max-w-xs mx-auto">{profileData.bio}</p>
+            {loadingProfile ? (
+              <>
+                <Skeleton className="w-20 h-20 rounded-full mx-auto mb-3 bg-white/20" />
+                <Skeleton className="h-8 w-32 mx-auto mb-2 bg-white/20" />
+                <Skeleton className="h-4 w-40 mx-auto bg-white/20" />
+              </>
+            ) : (
+              <>
+                <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center text-4xl mx-auto mb-3 overflow-hidden">
+                  {profileData?.avatar_url ? (
+                    <img src={profileData.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    "👤"
+                  )}
+                </div>
+                <h1 className="text-2xl font-bold">{profile.name}</h1>
+                <p className="text-sm opacity-90">Level {profile.level} Financial Rookie</p>
+                {profileData?.bio && (
+                  <p className="text-sm opacity-80 mt-2 max-w-xs mx-auto">{profileData.bio}</p>
+                )}
+              </>
             )}
             
             <div className="mt-4 bg-white/10 backdrop-blur-sm rounded-2xl p-4">
