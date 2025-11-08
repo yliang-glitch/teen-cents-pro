@@ -6,11 +6,68 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ArrowLeft, DollarSign, Briefcase, Gift, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const Income = () => {
   const [amount, setAmount] = useState("");
   const [title, setTitle] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  // Fetch recent income
+  const { data: recentIncome, isLoading } = useQuery({
+    queryKey: ["income", user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data, error } = await supabase
+        .from("income")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(10);
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  // Add income mutation
+  const addIncomeMutation = useMutation({
+    mutationFn: async (incomeData: { amount: number; title: string; category: string }) => {
+      if (!user) throw new Error("User not authenticated");
+      
+      const { error } = await supabase
+        .from("income")
+        .insert({
+          user_id: user.id,
+          amount: incomeData.amount,
+          title: incomeData.title,
+          category: incomeData.category,
+        });
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["income", user?.id] });
+      toast.success(`Added $${amount} income! +25 XP`, {
+        description: `${title} logged successfully`,
+      });
+      // Reset form
+      setAmount("");
+      setTitle("");
+      setSelectedCategory("");
+    },
+    onError: (error) => {
+      toast.error("Failed to add income", {
+        description: error.message,
+      });
+    },
+  });
 
   const categories = [
     { id: "gig", label: "Gig Work", icon: Briefcase, color: "text-primary" },
@@ -26,14 +83,11 @@ const Income = () => {
       return;
     }
     
-    toast.success(`Added $${amount} income! +25 XP`, {
-      description: `${title} logged successfully`,
+    addIncomeMutation.mutate({
+      amount: parseFloat(amount),
+      title,
+      category: selectedCategory,
     });
-    
-    // Reset form
-    setAmount("");
-    setTitle("");
-    setSelectedCategory("");
   };
 
   return (
@@ -115,32 +169,45 @@ const Income = () => {
         {/* Recent Income */}
         <div className="mt-8">
           <h2 className="text-lg font-bold mb-3">Recent Income</h2>
-          <Card className="divide-y bg-gradient-card border-0">
-            <div className="p-4 flex justify-between items-center">
-              <div className="flex items-center gap-3">
-                <div className="bg-success/10 p-2 rounded-xl">
-                  <Briefcase className="w-5 h-5 text-success" />
-                </div>
-                <div>
-                  <p className="font-semibold">Lawn Mowing</p>
-                  <p className="text-xs text-muted-foreground">Gig • Today</p>
-                </div>
+          {isLoading ? (
+            <Card className="p-4 bg-gradient-card border-0">
+              <div className="space-y-4">
+                <Skeleton className="h-16 w-full" />
+                <Skeleton className="h-16 w-full" />
               </div>
-              <p className="font-bold text-success">+$40.00</p>
-            </div>
-            <div className="p-4 flex justify-between items-center">
-              <div className="flex items-center gap-3">
-                <div className="bg-success/10 p-2 rounded-xl">
-                  <TrendingUp className="w-5 h-5 text-success" />
-                </div>
-                <div>
-                  <p className="font-semibold">Tutoring</p>
-                  <p className="text-xs text-muted-foreground">Job • Yesterday</p>
-                </div>
-              </div>
-              <p className="font-bold text-success">+$60.00</p>
-            </div>
-          </Card>
+            </Card>
+          ) : recentIncome && recentIncome.length > 0 ? (
+            <Card className="divide-y bg-gradient-card border-0">
+              {recentIncome.map((income) => {
+                const category = categories.find(cat => cat.id === income.category);
+                const Icon = category?.icon || DollarSign;
+                const date = new Date(income.created_at);
+                const isToday = date.toDateString() === new Date().toDateString();
+                const dateText = isToday ? "Today" : date.toLocaleDateString();
+                
+                return (
+                  <div key={income.id} className="p-4 flex justify-between items-center">
+                    <div className="flex items-center gap-3">
+                      <div className="bg-success/10 p-2 rounded-xl">
+                        <Icon className={`w-5 h-5 ${category?.color || "text-success"}`} />
+                      </div>
+                      <div>
+                        <p className="font-semibold">{income.title}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {category?.label || "Other"} • {dateText}
+                        </p>
+                      </div>
+                    </div>
+                    <p className="font-bold text-success">+${income.amount.toFixed(2)}</p>
+                  </div>
+                );
+              })}
+            </Card>
+          ) : (
+            <Card className="p-8 bg-gradient-card border-0 text-center">
+              <p className="text-muted-foreground">No income recorded yet</p>
+            </Card>
+          )}
         </div>
       </div>
     </div>
