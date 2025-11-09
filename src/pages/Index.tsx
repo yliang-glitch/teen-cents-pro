@@ -18,20 +18,13 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useQuery } from "@tanstack/react-query";
+import { format } from "date-fns";
 
 const Index = () => {
   const { user } = useAuth();
   const [username, setUsername] = useState<string>("User");
   const [loadingProfile, setLoadingProfile] = useState(true);
-  const [stats] = useState({
-    totalEarnings: 452.50,
-    totalSpent: 187.30,
-    totalSavings: 265.20,
-    level: 5,
-    xp: 1250,
-    xpToNext: 1500,
-    streak: 7
-  });
 
   useEffect(() => {
     const fetchUsername = async () => {
@@ -56,16 +49,93 @@ const Index = () => {
     fetchUsername();
   }, [user]);
 
-  const recentTransactions = [
-    { id: 1, type: "income", title: "Lawn Mowing", amount: 40, category: "Gig", date: "Today" },
-    { id: 2, type: "expense", title: "Coffee", amount: 5.50, category: "Food", date: "Today" },
-    { id: 3, type: "income", title: "Tutoring", amount: 60, category: "Service", date: "Yesterday" },
-  ];
+  // Fetch income data
+  const { data: incomeData = [], isLoading: loadingIncome } = useQuery({
+    queryKey: ["income", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const { data, error } = await supabase
+        .from("income")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user?.id,
+  });
 
-  const savingsGoals = [
-    { id: 1, title: "New Laptop", target: 800, current: 265.20, emoji: "💻" },
-    { id: 2, title: "Concert Tickets", target: 150, current: 120, emoji: "🎵" },
-  ];
+  // Fetch expenses data
+  const { data: expensesData = [], isLoading: loadingExpenses } = useQuery({
+    queryKey: ["expenses", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const { data, error } = await supabase
+        .from("expenses")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user?.id,
+  });
+
+  // Fetch goals data
+  const { data: goalsData = [], isLoading: loadingGoals } = useQuery({
+    queryKey: ["goals", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const { data, error } = await supabase
+        .from("goals")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(2);
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user?.id,
+  });
+
+  // Calculate statistics
+  const totalEarnings = incomeData.reduce((sum, item) => sum + Number(item.amount), 0);
+  const totalSpent = expensesData.reduce((sum, item) => sum + Number(item.amount), 0);
+  const totalBalance = totalEarnings - totalSpent;
+
+  // Combine and sort recent transactions
+  const recentTransactions = [
+    ...incomeData.slice(0, 5).map(item => ({
+      id: item.id,
+      type: "income" as const,
+      title: item.title,
+      amount: Number(item.amount),
+      category: item.category,
+      date: item.created_at,
+    })),
+    ...expensesData.slice(0, 5).map(item => ({
+      id: item.id,
+      type: "expense" as const,
+      title: item.title,
+      amount: Number(item.amount),
+      category: item.category,
+      date: item.created_at,
+    })),
+  ]
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .slice(0, 5);
+
+  const isLoading = loadingIncome || loadingExpenses || loadingGoals;
+
+  const stats = {
+    totalEarnings,
+    totalSpent,
+    totalSavings: totalBalance,
+    level: 5,
+    xp: 1250,
+    xpToNext: 1500,
+    streak: 7
+  };
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -163,25 +233,56 @@ const Index = () => {
             </Link>
           </div>
           <div className="space-y-3">
-            {savingsGoals.map(goal => (
-              <Card key={goal.id} className="p-4 hover:shadow-md transition-all bg-gradient-card border-0">
-                <div className="flex justify-between items-start mb-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-2xl">{goal.emoji}</span>
-                    <div>
-                      <p className="font-semibold">{goal.title}</p>
-                      <p className="text-sm text-muted-foreground">
-                        ${goal.current.toFixed(2)} of ${goal.target.toFixed(2)}
-                      </p>
+            {isLoading ? (
+              Array(2).fill(0).map((_, i) => (
+                <Card key={i} className="p-4 bg-gradient-card border-0">
+                  <div className="flex justify-between items-start mb-2">
+                    <div className="flex items-center gap-2">
+                      <Skeleton className="w-8 h-8 rounded" />
+                      <div className="space-y-2">
+                        <Skeleton className="h-4 w-24" />
+                        <Skeleton className="h-3 w-32" />
+                      </div>
                     </div>
+                    <Skeleton className="h-4 w-10" />
                   </div>
-                  <span className="text-sm font-bold text-primary">
-                    {Math.round((goal.current / goal.target) * 100)}%
-                  </span>
-                </div>
-                <Progress value={(goal.current / goal.target) * 100} className="h-2" />
+                  <Skeleton className="h-2 w-full" />
+                </Card>
+              ))
+            ) : goalsData.length === 0 ? (
+              <Card className="p-6 bg-gradient-card border-0 text-center">
+                <Target className="w-10 h-10 mx-auto mb-2 text-muted-foreground" />
+                <p className="text-sm text-muted-foreground">No goals yet. Create your first goal!</p>
+                <Link to="/goals">
+                  <Button variant="outline" size="sm" className="mt-3">Create Goal</Button>
+                </Link>
               </Card>
-            ))}
+            ) : (
+              goalsData.map(goal => {
+                const progress = (goal.current_amount / goal.target_amount) * 100;
+                return (
+                  <Card key={goal.id} className="p-4 hover:shadow-md transition-all bg-gradient-card border-0">
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded bg-primary/10 flex items-center justify-center">
+                          <Target className="w-4 h-4 text-primary" />
+                        </div>
+                        <div>
+                          <p className="font-semibold">{goal.title}</p>
+                          <p className="text-sm text-muted-foreground">
+                            ${goal.current_amount.toFixed(2)} of ${goal.target_amount.toFixed(2)}
+                          </p>
+                        </div>
+                      </div>
+                      <span className="text-sm font-bold text-primary">
+                        {Math.round(progress)}%
+                      </span>
+                    </div>
+                    <Progress value={progress} className="h-2" />
+                  </Card>
+                );
+              })
+            )}
           </div>
         </div>
 
@@ -192,30 +293,64 @@ const Index = () => {
             Recent Activity
           </h2>
           <Card className="divide-y bg-gradient-card border-0">
-            {recentTransactions.map(tx => (
-              <div key={tx.id} className="p-4 flex justify-between items-center hover:bg-muted/50 transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-xl ${
-                    tx.type === "income" ? "bg-success/10" : "bg-destructive/10"
-                  }`}>
-                    {tx.type === "income" ? (
-                      <ArrowUpRight className="w-4 h-4 text-success" />
-                    ) : (
-                      <ArrowDownRight className="w-4 h-4 text-destructive" />
-                    )}
+            {isLoading ? (
+              Array(3).fill(0).map((_, i) => (
+                <div key={i} className="p-4 flex justify-between items-center">
+                  <div className="flex items-center gap-3">
+                    <Skeleton className="w-10 h-10 rounded-xl" />
+                    <div className="space-y-2">
+                      <Skeleton className="h-4 w-24" />
+                      <Skeleton className="h-3 w-32" />
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-semibold">{tx.title}</p>
-                    <p className="text-xs text-muted-foreground">{tx.category} • {tx.date}</p>
-                  </div>
+                  <Skeleton className="h-5 w-16" />
                 </div>
-                <p className={`font-bold ${
-                  tx.type === "income" ? "text-success" : "text-destructive"
-                }`}>
-                  {tx.type === "income" ? "+" : "-"}${tx.amount.toFixed(2)}
-                </p>
+              ))
+            ) : recentTransactions.length === 0 ? (
+              <div className="p-8 text-center">
+                <TrendingUp className="w-10 h-10 mx-auto mb-2 text-muted-foreground" />
+                <p className="text-sm text-muted-foreground">No transactions yet. Start tracking!</p>
               </div>
-            ))}
+            ) : (
+              recentTransactions.map(tx => {
+                const txDate = new Date(tx.date);
+                const today = new Date();
+                const yesterday = new Date(today);
+                yesterday.setDate(yesterday.getDate() - 1);
+                
+                let dateLabel = format(txDate, 'MMM d');
+                if (txDate.toDateString() === today.toDateString()) {
+                  dateLabel = 'Today';
+                } else if (txDate.toDateString() === yesterday.toDateString()) {
+                  dateLabel = 'Yesterday';
+                }
+
+                return (
+                  <div key={tx.id} className="p-4 flex justify-between items-center hover:bg-muted/50 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <div className={`p-2 rounded-xl ${
+                        tx.type === "income" ? "bg-success/10" : "bg-destructive/10"
+                      }`}>
+                        {tx.type === "income" ? (
+                          <ArrowUpRight className="w-4 h-4 text-success" />
+                        ) : (
+                          <ArrowDownRight className="w-4 h-4 text-destructive" />
+                        )}
+                      </div>
+                      <div>
+                        <p className="font-semibold">{tx.title}</p>
+                        <p className="text-xs text-muted-foreground">{tx.category} • {dateLabel}</p>
+                      </div>
+                    </div>
+                    <p className={`font-bold ${
+                      tx.type === "income" ? "text-success" : "text-destructive"
+                    }`}>
+                      {tx.type === "income" ? "+" : "-"}${tx.amount.toFixed(2)}
+                    </p>
+                  </div>
+                );
+              })
+            )}
           </Card>
         </div>
 
