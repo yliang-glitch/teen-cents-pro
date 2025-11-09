@@ -8,40 +8,107 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const Goals = () => {
-  const [goals, setGoals] = useState([
-    { id: 1, title: "New Laptop", target: 800, current: 265.20, emoji: "💻", color: "primary" },
-    { id: 2, title: "Concert Tickets", target: 150, current: 120, emoji: "🎵", color: "secondary" },
-    { id: 3, title: "Emergency Fund", target: 500, current: 85, emoji: "🛡️", color: "success" },
-    { id: 4, title: "Birthday Gift", target: 100, current: 45, emoji: "🎁", color: "accent" },
-  ]);
-
-  const [newGoal, setNewGoal] = useState({ title: "", target: "", emoji: "" });
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const [newGoal, setNewGoal] = useState({ title: "", target: "" });
   const [open, setOpen] = useState(false);
 
+  const { data: goals = [], isLoading } = useQuery({
+    queryKey: ["goals", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      
+      const { data, error } = await supabase
+        .from("goals")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user?.id,
+  });
+
+  const addGoalMutation = useMutation({
+    mutationFn: async (goal: { title: string; target_amount: number }) => {
+      if (!user?.id) throw new Error("User not authenticated");
+
+      const { data, error } = await supabase
+        .from("goals")
+        .insert({
+          user_id: user.id,
+          title: goal.title,
+          target_amount: goal.target_amount,
+          current_amount: 0,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["goals", user?.id] });
+      toast.success("Goal created! +50 XP", {
+        description: `Start saving for ${newGoal.title}!`,
+      });
+      setNewGoal({ title: "", target: "" });
+      setOpen(false);
+    },
+    onError: (error) => {
+      toast.error("Failed to create goal", {
+        description: error.message,
+      });
+    },
+  });
+
+  const updateGoalMutation = useMutation({
+    mutationFn: async ({ goalId, amount }: { goalId: string; amount: number }) => {
+      const goal = goals.find((g) => g.id === goalId);
+      if (!goal) throw new Error("Goal not found");
+
+      const newAmount = goal.current_amount + amount;
+
+      const { data, error } = await supabase
+        .from("goals")
+        .update({ current_amount: newAmount })
+        .eq("id", goalId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["goals", user?.id] });
+      toast.success(`Added $${variables.amount} to goal!`, {
+        description: `${data.title}: $${data.current_amount.toFixed(2)}/$${data.target_amount.toFixed(2)}`,
+      });
+    },
+    onError: (error) => {
+      toast.error("Failed to update goal", {
+        description: error.message,
+      });
+    },
+  });
+
   const handleAddGoal = () => {
-    if (!newGoal.title || !newGoal.target || !newGoal.emoji) {
+    if (!newGoal.title || !newGoal.target) {
       toast.error("Please fill in all fields");
       return;
     }
 
-    const goal = {
-      id: goals.length + 1,
+    addGoalMutation.mutate({
       title: newGoal.title,
-      target: parseFloat(newGoal.target),
-      current: 0,
-      emoji: newGoal.emoji,
-      color: "primary"
-    };
-
-    setGoals([...goals, goal]);
-    toast.success("Goal created! +50 XP", {
-      description: `Start saving for ${newGoal.title}!`,
+      target_amount: parseFloat(newGoal.target),
     });
-    
-    setNewGoal({ title: "", target: "", emoji: "" });
-    setOpen(false);
   };
 
   return (
@@ -69,16 +136,6 @@ const Goals = () => {
                 </DialogHeader>
                 <div className="space-y-4 py-4">
                   <div>
-                    <Label htmlFor="emoji">Emoji</Label>
-                    <Input
-                      id="emoji"
-                      placeholder="🎯"
-                      value={newGoal.emoji}
-                      onChange={(e) => setNewGoal({ ...newGoal, emoji: e.target.value })}
-                      maxLength={2}
-                    />
-                  </div>
-                  <div>
                     <Label htmlFor="title">Goal Name</Label>
                     <Input
                       id="title"
@@ -97,8 +154,8 @@ const Goals = () => {
                       onChange={(e) => setNewGoal({ ...newGoal, target: e.target.value })}
                     />
                   </div>
-                  <Button onClick={handleAddGoal} className="w-full">
-                    Create Goal +50 XP
+                  <Button onClick={handleAddGoal} className="w-full" disabled={addGoalMutation.isPending}>
+                    {addGoalMutation.isPending ? "Creating..." : "Create Goal +50 XP"}
                   </Button>
                 </div>
               </DialogContent>
@@ -123,77 +180,100 @@ const Goals = () => {
               <span className="text-xs font-medium">Total Saved</span>
             </div>
             <p className="text-2xl font-bold">
-              ${goals.reduce((sum, g) => sum + g.current, 0).toFixed(2)}
+              ${goals.reduce((sum, g) => sum + g.current_amount, 0).toFixed(2)}
             </p>
           </Card>
         </div>
 
         {/* Goals List */}
         <div className="space-y-3">
-          {goals.map((goal) => {
-            const progress = (goal.current / goal.target) * 100;
-            const isCompleted = progress >= 100;
-            
-            return (
-              <Card 
-                key={goal.id} 
-                className={`p-5 bg-gradient-card border-0 hover:shadow-md transition-all ${
-                  isCompleted ? "ring-2 ring-success" : ""
-                }`}
-              >
+          {isLoading ? (
+            Array(3).fill(0).map((_, i) => (
+              <Card key={i} className="p-5 bg-gradient-card border-0">
                 <div className="flex justify-between items-start mb-3">
                   <div className="flex items-center gap-3">
-                    <span className="text-3xl">{goal.emoji}</span>
-                    <div>
-                      <p className="font-bold text-lg">{goal.title}</p>
-                      <p className="text-sm text-muted-foreground">
-                        ${goal.current.toFixed(2)} of ${goal.target.toFixed(2)}
-                      </p>
+                    <Skeleton className="w-12 h-12 rounded-full" />
+                    <div className="space-y-2">
+                      <Skeleton className="h-5 w-32" />
+                      <Skeleton className="h-4 w-24" />
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className={`text-lg font-bold ${
-                      isCompleted ? "text-success" : "text-primary"
-                    }`}>
-                      {Math.round(progress)}%
-                    </p>
-                    {isCompleted && (
-                      <span className="text-xs text-success font-medium">Complete! 🎉</span>
-                    )}
-                  </div>
+                  <Skeleton className="h-6 w-12" />
                 </div>
-                
-                <Progress value={progress} className="h-3 mb-3" />
-                
+                <Skeleton className="h-3 w-full mb-3" />
                 <div className="flex gap-2">
-                  <Button 
-                    size="sm" 
-                    variant="outline" 
-                    className="flex-1"
-                    onClick={() => {
-                      toast.success("Added $10 to goal!", {
-                        description: `${goal.title}: $${(goal.current + 10).toFixed(2)}/$${goal.target.toFixed(2)}`,
-                      });
-                    }}
-                  >
-                    Add $10
-                  </Button>
-                  <Button 
-                    size="sm" 
-                    variant="outline" 
-                    className="flex-1"
-                    onClick={() => {
-                      toast.success("Added $25 to goal!", {
-                        description: `${goal.title}: $${(goal.current + 25).toFixed(2)}/$${goal.target.toFixed(2)}`,
-                      });
-                    }}
-                  >
-                    Add $25
-                  </Button>
+                  <Skeleton className="h-9 flex-1" />
+                  <Skeleton className="h-9 flex-1" />
                 </div>
               </Card>
-            );
-          })}
+            ))
+          ) : goals.length === 0 ? (
+            <Card className="p-8 bg-gradient-card border-0 text-center">
+              <Target className="w-12 h-12 mx-auto mb-3 text-muted-foreground" />
+              <p className="text-muted-foreground">No goals yet. Create your first goal!</p>
+            </Card>
+          ) : (
+            goals.map((goal) => {
+              const progress = (goal.current_amount / goal.target_amount) * 100;
+              const isCompleted = progress >= 100;
+              
+              return (
+                <Card 
+                  key={goal.id} 
+                  className={`p-5 bg-gradient-card border-0 hover:shadow-md transition-all ${
+                    isCompleted ? "ring-2 ring-success" : ""
+                  }`}
+                >
+                  <div className="flex justify-between items-start mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                        <Target className="w-6 h-6 text-primary" />
+                      </div>
+                      <div>
+                        <p className="font-bold text-lg">{goal.title}</p>
+                        <p className="text-sm text-muted-foreground">
+                          ${goal.current_amount.toFixed(2)} of ${goal.target_amount.toFixed(2)}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className={`text-lg font-bold ${
+                        isCompleted ? "text-success" : "text-primary"
+                      }`}>
+                        {Math.round(progress)}%
+                      </p>
+                      {isCompleted && (
+                        <span className="text-xs text-success font-medium">Complete! 🎉</span>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <Progress value={progress} className="h-3 mb-3" />
+                  
+                  <div className="flex gap-2">
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      className="flex-1"
+                      onClick={() => updateGoalMutation.mutate({ goalId: goal.id, amount: 10 })}
+                      disabled={updateGoalMutation.isPending}
+                    >
+                      Add $10
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      className="flex-1"
+                      onClick={() => updateGoalMutation.mutate({ goalId: goal.id, amount: 25 })}
+                      disabled={updateGoalMutation.isPending}
+                    >
+                      Add $25
+                    </Button>
+                  </div>
+                </Card>
+              );
+            })
+          )}
         </div>
 
         {/* Tips Card */}
