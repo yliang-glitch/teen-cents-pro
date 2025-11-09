@@ -7,17 +7,69 @@ import { Label } from "@/components/ui/label";
 import { ArrowLeft, DollarSign, Coffee, ShoppingBag, Smartphone, Gamepad2 } from "lucide-react";
 import { toast } from "sonner";
 import { Progress } from "@/components/ui/progress";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Skeleton } from "@/components/ui/skeleton";
+import { format } from "date-fns";
 
 const Expenses = () => {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [amount, setAmount] = useState("");
   const [title, setTitle] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
 
+  const monthlyBudget = 200;
+
+  // Fetch expenses from database
+  const { data: expenses, isLoading } = useQuery({
+    queryKey: ["expenses", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const { data, error } = await supabase
+        .from("expenses")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user?.id,
+  });
+
+  // Calculate budget dynamically
+  const totalSpent = expenses?.reduce((sum, expense) => sum + Number(expense.amount), 0) || 0;
   const budget = {
-    total: 200,
-    spent: 187.30,
-    remaining: 12.70
+    total: monthlyBudget,
+    spent: totalSpent,
+    remaining: monthlyBudget - totalSpent
   };
+
+  // Mutation to add expense
+  const addExpenseMutation = useMutation({
+    mutationFn: async (newExpense: { amount: number; title: string; category: string }) => {
+      if (!user?.id) throw new Error("User not authenticated");
+      
+      const { data, error } = await supabase
+        .from("expenses")
+        .insert([{
+          user_id: user.id,
+          amount: newExpense.amount,
+          title: newExpense.title,
+          category: newExpense.category,
+        }])
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["expenses", user?.id] });
+    },
+  });
 
   const categories = [
     { id: "food", label: "Food & Drinks", icon: Coffee, color: "text-accent" },
@@ -26,7 +78,7 @@ const Expenses = () => {
     { id: "entertainment", label: "Entertainment", icon: Gamepad2, color: "text-destructive" },
   ];
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!amount || !title || !selectedCategory) {
       toast.error("Please fill in all fields");
@@ -37,23 +89,34 @@ const Expenses = () => {
     const newSpent = budget.spent + expenseAmount;
     const newRemaining = budget.total - newSpent;
     
-    if (newRemaining < 0) {
-      toast.error("Warning: Over budget!", {
-        description: `You'll be $${Math.abs(newRemaining).toFixed(2)} over your monthly budget.`,
+    try {
+      await addExpenseMutation.mutateAsync({
+        amount: expenseAmount,
+        title,
+        category: selectedCategory,
       });
-    } else if (newRemaining < 20) {
-      toast.warning("Budget Alert!", {
-        description: `Only $${newRemaining.toFixed(2)} left this month. Be careful!`,
-      });
-    } else {
-      toast.success(`Logged $${amount} expense`, {
-        description: `${title} tracked successfully`,
-      });
+
+      if (newRemaining < 0) {
+        toast.error("Warning: Over budget!", {
+          description: `You're $${Math.abs(newRemaining).toFixed(2)} over your monthly budget.`,
+        });
+      } else if (newRemaining < 20) {
+        toast.warning("Budget Alert!", {
+          description: `Only $${newRemaining.toFixed(2)} left this month. Be careful!`,
+        });
+      } else {
+        toast.success(`Logged $${amount} expense`, {
+          description: `${title} tracked successfully`,
+        });
+      }
+      
+      setAmount("");
+      setTitle("");
+      setSelectedCategory("");
+    } catch (error) {
+      toast.error("Failed to save expense");
+      console.error(error);
     }
-    
-    setAmount("");
-    setTitle("");
-    setSelectedCategory("");
   };
 
   return (
@@ -149,32 +212,43 @@ const Expenses = () => {
         {/* Recent Expenses */}
         <div className="mt-8">
           <h2 className="text-lg font-bold mb-3">Recent Expenses</h2>
-          <Card className="divide-y bg-gradient-card border-0">
-            <div className="p-4 flex justify-between items-center">
-              <div className="flex items-center gap-3">
-                <div className="bg-destructive/10 p-2 rounded-xl">
-                  <Coffee className="w-5 h-5 text-destructive" />
-                </div>
-                <div>
-                  <p className="font-semibold">Coffee</p>
-                  <p className="text-xs text-muted-foreground">Food • Today</p>
-                </div>
-              </div>
-              <p className="font-bold text-destructive">-$5.50</p>
-            </div>
-            <div className="p-4 flex justify-between items-center">
-              <div className="flex items-center gap-3">
-                <div className="bg-destructive/10 p-2 rounded-xl">
-                  <Gamepad2 className="w-5 h-5 text-destructive" />
-                </div>
-                <div>
-                  <p className="font-semibold">Game Subscription</p>
-                  <p className="text-xs text-muted-foreground">Entertainment • 2 days ago</p>
-                </div>
-              </div>
-              <p className="font-bold text-destructive">-$9.99</p>
-            </div>
-          </Card>
+          {isLoading ? (
+            <Card className="p-4 bg-gradient-card border-0">
+              <Skeleton className="h-16 mb-2" />
+              <Skeleton className="h-16" />
+            </Card>
+          ) : expenses && expenses.length > 0 ? (
+            <Card className="divide-y bg-gradient-card border-0">
+              {expenses.map((expense) => {
+                const category = categories.find((c) => c.id === expense.category);
+                const Icon = category?.icon || Coffee;
+                const timeAgo = format(new Date(expense.created_at), "MMM d");
+                
+                return (
+                  <div key={expense.id} className="p-4 flex justify-between items-center">
+                    <div className="flex items-center gap-3">
+                      <div className="bg-destructive/10 p-2 rounded-xl">
+                        <Icon className={`w-5 h-5 ${category?.color || "text-destructive"}`} />
+                      </div>
+                      <div>
+                        <p className="font-semibold">{expense.title}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {category?.label || expense.category} • {timeAgo}
+                        </p>
+                      </div>
+                    </div>
+                    <p className="font-bold text-destructive">-${Number(expense.amount).toFixed(2)}</p>
+                  </div>
+                );
+              })}
+            </Card>
+          ) : (
+            <Card className="p-8 text-center bg-gradient-card border-0">
+              <DollarSign className="w-12 h-12 mx-auto mb-3 text-muted-foreground opacity-50" />
+              <p className="text-muted-foreground">No expenses yet</p>
+              <p className="text-sm text-muted-foreground mt-1">Start tracking your spending above</p>
+            </Card>
+          )}
         </div>
       </div>
     </div>
