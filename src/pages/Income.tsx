@@ -4,17 +4,37 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, DollarSign, Briefcase, Gift, TrendingUp } from "lucide-react";
+import { ArrowLeft, DollarSign, Briefcase, Gift, TrendingUp, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const Income = () => {
   const [amount, setAmount] = useState("");
   const [title, setTitle] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
+  const [editingIncome, setEditingIncome] = useState<any>(null);
+  const [deletingIncomeId, setDeletingIncomeId] = useState<string | null>(null);
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
@@ -57,13 +77,60 @@ const Income = () => {
       toast.success(`Added $${amount} income! +25 XP`, {
         description: `${title} logged successfully`,
       });
-      // Reset form
       setAmount("");
       setTitle("");
       setSelectedCategory("");
     },
     onError: (error) => {
       toast.error("Failed to add income", {
+        description: error.message,
+      });
+    },
+  });
+
+  // Update income mutation
+  const updateIncomeMutation = useMutation({
+    mutationFn: async (incomeData: { id: string; amount: number; title: string; category: string }) => {
+      const { error } = await supabase
+        .from("income")
+        .update({
+          amount: incomeData.amount,
+          title: incomeData.title,
+          category: incomeData.category,
+        })
+        .eq("id", incomeData.id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["income", user?.id] });
+      toast.success("Income updated successfully");
+      setEditingIncome(null);
+    },
+    onError: (error) => {
+      toast.error("Failed to update income", {
+        description: error.message,
+      });
+    },
+  });
+
+  // Delete income mutation
+  const deleteIncomeMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from("income")
+        .delete()
+        .eq("id", id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["income", user?.id] });
+      toast.success("Income deleted successfully");
+      setDeletingIncomeId(null);
+    },
+    onError: (error) => {
+      toast.error("Failed to delete income", {
         description: error.message,
       });
     },
@@ -87,6 +154,18 @@ const Income = () => {
       amount: parseFloat(amount),
       title,
       category: selectedCategory,
+    });
+  };
+
+  const handleEditSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingIncome) return;
+    
+    updateIncomeMutation.mutate({
+      id: editingIncome.id,
+      amount: editingIncome.amount,
+      title: editingIncome.title,
+      category: editingIncome.category,
     });
   };
 
@@ -186,19 +265,39 @@ const Income = () => {
                 const dateText = isToday ? "Today" : date.toLocaleDateString();
                 
                 return (
-                  <div key={income.id} className="p-4 flex justify-between items-center">
-                    <div className="flex items-center gap-3">
+                  <div key={income.id} className="p-4 flex justify-between items-center group">
+                    <div className="flex items-center gap-3 flex-1">
                       <div className="bg-success/10 p-2 rounded-xl">
                         <Icon className={`w-5 h-5 ${category?.color || "text-success"}`} />
                       </div>
-                      <div>
+                      <div className="flex-1">
                         <p className="font-semibold">{income.title}</p>
                         <p className="text-xs text-muted-foreground">
                           {category?.label || "Other"} • {dateText}
                         </p>
                       </div>
                     </div>
-                    <p className="font-bold text-success">+${income.amount.toFixed(2)}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-bold text-success">+${income.amount.toFixed(2)}</p>
+                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-8 w-8"
+                          onClick={() => setEditingIncome(income)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-8 w-8 text-destructive hover:text-destructive"
+                          onClick={() => setDeletingIncomeId(income.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
                   </div>
                 );
               })}
@@ -210,6 +309,92 @@ const Income = () => {
           )}
         </div>
       </div>
+
+      {/* Edit Dialog */}
+      <Dialog open={!!editingIncome} onOpenChange={(open) => !open && setEditingIncome(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Income</DialogTitle>
+            <DialogDescription>Update your income details</DialogDescription>
+          </DialogHeader>
+          {editingIncome && (
+            <form onSubmit={handleEditSubmit} className="space-y-4">
+              <div>
+                <Label htmlFor="edit-amount">Amount</Label>
+                <div className="relative mt-2">
+                  <DollarSign className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
+                  <Input
+                    id="edit-amount"
+                    type="number"
+                    step="0.01"
+                    value={editingIncome.amount}
+                    onChange={(e) => setEditingIncome({ ...editingIncome, amount: parseFloat(e.target.value) })}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="edit-title">Description</Label>
+                <Input
+                  id="edit-title"
+                  value={editingIncome.title}
+                  onChange={(e) => setEditingIncome({ ...editingIncome, title: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label>Category</Label>
+                <div className="grid grid-cols-2 gap-2 mt-2">
+                  {categories.map((cat) => {
+                    const Icon = cat.icon;
+                    return (
+                      <button
+                        key={cat.id}
+                        type="button"
+                        onClick={() => setEditingIncome({ ...editingIncome, category: cat.id })}
+                        className={`p-3 rounded-lg border-2 transition-all ${
+                          editingIncome.category === cat.id
+                            ? "border-primary bg-primary/5"
+                            : "border-border hover:border-primary/50"
+                        }`}
+                      >
+                        <Icon className={`w-5 h-5 mx-auto mb-1 ${cat.color}`} />
+                        <p className="text-xs font-medium">{cat.label}</p>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setEditingIncome(null)}>
+                  Cancel
+                </Button>
+                <Button type="submit">Save Changes</Button>
+              </DialogFooter>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={!!deletingIncomeId} onOpenChange={(open) => !open && setDeletingIncomeId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Income</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this income entry? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deletingIncomeId && deleteIncomeMutation.mutate(deletingIncomeId)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
