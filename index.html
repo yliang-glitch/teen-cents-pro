@@ -24,7 +24,22 @@
     <script src="capacitor.js"></script>
 
     <!-- Your app entry point -->
-    <script type="module" src="/src/main.tsx"></script>
+    
+
+    <script type="module"> import '/src/main.tsx';
+
+  // Wait for DOM and Capacitor to be ready
+  document.addEventListener('DOMContentLoaded', () => {
+    if (window.Capacitor) {
+      document.dispatchEvent(new CustomEvent('capacitor-ready'));
+      console.log('Capacitor bridge is ready!');
+    } else {
+      console.warn('Capacitor not found yet. Running in browser?');
+    }
+  });
+  </script>
+
+    
   </body>
 </html>
 
