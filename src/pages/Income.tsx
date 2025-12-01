@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, DollarSign, Briefcase, Gift, TrendingUp, Pencil, Trash2 } from "lucide-react";
+import { ArrowLeft, DollarSign, Briefcase, Gift, TrendingUp, Pencil, Trash2, Search } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -33,6 +33,7 @@ const Income = () => {
   const [amount, setAmount] = useState("");
   const [title, setTitle] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const [editingIncome, setEditingIncome] = useState<any>(null);
   const [deletingIncomeId, setDeletingIncomeId] = useState<string | null>(null);
   const { user } = useAuth();
@@ -247,7 +248,24 @@ const Income = () => {
 
         {/* Recent Income */}
         <div className="mt-8">
-          <h2 className="text-lg font-bold mb-3">Recent Income</h2>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-lg font-bold">Recent Income</h2>
+          </div>
+          
+          {/* Search Input */}
+          <div className="mb-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="Search transactions..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+          </div>
+
           {isLoading ? (
             <Card className="p-4 bg-gradient-card border-0">
               <div className="space-y-4">
@@ -257,7 +275,12 @@ const Income = () => {
             </Card>
           ) : recentIncome && recentIncome.length > 0 ? (
             <Card className="divide-y bg-gradient-card border-0">
-              {recentIncome.map((income) => {
+              {recentIncome
+                .filter((income) => 
+                  income.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                  categories.find(c => c.id === income.category)?.label.toLowerCase().includes(searchQuery.toLowerCase())
+                )
+                .map((income) => {
                 const category = categories.find(cat => cat.id === income.category);
                 const Icon = category?.icon || DollarSign;
                 const date = new Date(income.created_at);
