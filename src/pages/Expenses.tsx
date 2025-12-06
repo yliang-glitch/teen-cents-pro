@@ -12,6 +12,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
+import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
 import {
   Dialog,
   DialogContent,
@@ -141,11 +142,29 @@ const Expenses = () => {
   });
 
   const categories = [
-    { id: "food", label: "Food & Drinks", icon: Coffee, color: "text-accent" },
-    { id: "shopping", label: "Shopping", icon: ShoppingBag, color: "text-secondary" },
-    { id: "tech", label: "Tech & Apps", icon: Smartphone, color: "text-primary" },
-    { id: "entertainment", label: "Entertainment", icon: Gamepad2, color: "text-destructive" },
+    { id: "food", label: "Food & Drinks", icon: Coffee, color: "text-accent", chartColor: "hsl(var(--accent))" },
+    { id: "shopping", label: "Shopping", icon: ShoppingBag, color: "text-secondary", chartColor: "hsl(var(--secondary))" },
+    { id: "tech", label: "Tech & Apps", icon: Smartphone, color: "text-primary", chartColor: "hsl(var(--primary))" },
+    { id: "entertainment", label: "Entertainment", icon: Gamepad2, color: "text-destructive", chartColor: "hsl(var(--destructive))" },
   ];
+
+  // Calculate category totals for chart
+  const categoryData = useMemo(() => {
+    if (!expenses || expenses.length === 0) return [];
+    
+    const totals = categories.map((cat) => {
+      const total = expenses
+        .filter((e) => e.category === cat.id)
+        .reduce((sum, e) => sum + Number(e.amount), 0);
+      return {
+        name: cat.label,
+        value: total,
+        color: cat.chartColor,
+      };
+    }).filter((item) => item.value > 0);
+    
+    return totals;
+  }, [expenses]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -227,6 +246,43 @@ const Expenses = () => {
             ${budget.spent.toFixed(2)} of ${budget.total.toFixed(2)} used
           </p>
         </Card>
+
+        {/* Category Chart */}
+        {categoryData.length > 0 && (
+          <Card className="p-4 mb-6 bg-gradient-card border-0 shadow-md">
+            <h3 className="text-sm font-semibold mb-3">Spending by Category</h3>
+            <div className="h-48">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={categoryData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={40}
+                    outerRadius={70}
+                    paddingAngle={3}
+                    dataKey="value"
+                  >
+                    {categoryData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    formatter={(value: number) => [`$${value.toFixed(2)}`, ""]}
+                    contentStyle={{
+                      backgroundColor: "hsl(var(--card))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: "8px",
+                    }}
+                  />
+                  <Legend
+                    formatter={(value) => <span className="text-xs">{value}</span>}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </Card>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <Card className="p-6 bg-gradient-card border-0 shadow-md">
