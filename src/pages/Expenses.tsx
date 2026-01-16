@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, DollarSign, Coffee, ShoppingBag, Smartphone, Gamepad2, Pencil, Trash2, Search } from "lucide-react";
+import { ArrowLeft, DollarSign, Coffee, ShoppingBag, Smartphone, Gamepad2, Pencil, Trash2, Search, Bitcoin, Coins } from "lucide-react";
 import { toast } from "sonner";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
@@ -146,6 +146,8 @@ const Expenses = () => {
     { id: "shopping", label: "Shopping", icon: ShoppingBag, color: "text-secondary", chartColor: "hsl(var(--secondary))" },
     { id: "tech", label: "Tech & Apps", icon: Smartphone, color: "text-primary", chartColor: "hsl(var(--primary))" },
     { id: "entertainment", label: "Entertainment", icon: Gamepad2, color: "text-destructive", chartColor: "hsl(var(--destructive))" },
+    { id: "btc", label: "Bitcoin (BTC)", icon: Bitcoin, color: "text-warning", chartColor: "hsl(var(--warning))" },
+    { id: "xrp", label: "Ripple (XRP)", icon: Coins, color: "text-success", chartColor: "hsl(var(--success))" },
   ];
 
   // Calculate category totals for chart
