@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, DollarSign, Briefcase, Gift, TrendingUp, Pencil, Trash2, Search } from "lucide-react";
+import { ArrowLeft, DollarSign, Briefcase, Gift, TrendingUp, Pencil, Trash2, Search, Bitcoin, Coins } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -142,6 +142,8 @@ const Income = () => {
     { id: "allowance", label: "Allowance", icon: Gift, color: "text-secondary" },
     { id: "job", label: "Part-time Job", icon: TrendingUp, color: "text-success" },
     { id: "other", label: "Other", icon: DollarSign, color: "text-accent" },
+    { id: "btc", label: "Bitcoin (BTC)", icon: Bitcoin, color: "text-warning" },
+    { id: "xrp", label: "Ripple (XRP)", icon: Coins, color: "text-muted-foreground" },
   ];
 
   const handleSubmit = (e: React.FormEvent) => {
