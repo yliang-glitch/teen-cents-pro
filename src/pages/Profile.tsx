@@ -1,7 +1,8 @@
-import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Award, Zap, TrendingUp, Target, Star, Trophy, Medal, Crown, LogOut, Edit } from "lucide-react";
+import { Award, Zap, TrendingUp, Target, Star, Trophy, Medal, Crown, LogOut, Edit, ChevronRight } from "lucide-react";
+import { IOSHeader } from "@/components/IOSHeader";
+import { IOSTabBar } from "@/components/IOSTabBar";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";

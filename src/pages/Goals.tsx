@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, Plus, Target, TrendingUp } from "lucide-react";
+import { Plus, Target, TrendingUp, ChevronRight } from "lucide-react";
+import { IOSHeader } from "@/components/IOSHeader";
+import { IOSTabBar } from "@/components/IOSTabBar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -112,59 +113,55 @@ const Goals = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-20">
-      <header className="bg-gradient-primary text-primary-foreground p-6 rounded-b-3xl shadow-lg">
-        <div className="max-w-md mx-auto">
-          <Link to="/" className="inline-flex items-center gap-2 mb-4 hover:opacity-80 transition-opacity">
-            <ArrowLeft className="w-5 h-5" />
-            <span>Back</span>
-          </Link>
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-3xl font-bold">Savings Goals</h1>
-              <p className="text-sm opacity-90 mt-1">Track your progress</p>
-            </div>
-            <Dialog open={open} onOpenChange={setOpen}>
-              <DialogTrigger asChild>
-                <Button size="icon" variant="secondary" className="rounded-full shadow-lg">
-                  <Plus className="w-5 h-5" />
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Create New Goal</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                  <div>
-                    <Label htmlFor="title">Goal Name</Label>
-                    <Input
-                      id="title"
-                      placeholder="New Sneakers"
-                      value={newGoal.title}
-                      onChange={(e) => setNewGoal({ ...newGoal, title: e.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="target">Target Amount ($)</Label>
-                    <Input
-                      id="target"
-                      type="number"
-                      placeholder="150.00"
-                      value={newGoal.target}
-                      onChange={(e) => setNewGoal({ ...newGoal, target: e.target.value })}
-                    />
-                  </div>
-                  <Button onClick={handleAddGoal} className="w-full" disabled={addGoalMutation.isPending}>
-                    {addGoalMutation.isPending ? "Creating..." : "Create Goal +50 XP"}
-                  </Button>
+    <div className="min-h-screen bg-background pb-24 safe-area-inset">
+      <IOSHeader 
+        title="Goals" 
+        largeTitle 
+        showBack 
+        backPath="/"
+        rightAction={
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button size="icon" variant="ghost" className="text-primary ios-press">
+                <Plus className="w-6 h-6" />
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="rounded-2xl">
+              <DialogHeader>
+                <DialogTitle className="text-center text-[17px]">New Goal</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div>
+                  <Label htmlFor="title" className="text-[13px] text-muted-foreground uppercase">Goal Name</Label>
+                  <Input
+                    id="title"
+                    placeholder="New Sneakers"
+                    value={newGoal.title}
+                    onChange={(e) => setNewGoal({ ...newGoal, title: e.target.value })}
+                    className="mt-1 h-12 rounded-xl"
+                  />
                 </div>
-              </DialogContent>
-            </Dialog>
-          </div>
-        </div>
-      </header>
+                <div>
+                  <Label htmlFor="target" className="text-[13px] text-muted-foreground uppercase">Target Amount ($)</Label>
+                  <Input
+                    id="target"
+                    type="number"
+                    placeholder="150.00"
+                    value={newGoal.target}
+                    onChange={(e) => setNewGoal({ ...newGoal, target: e.target.value })}
+                    className="mt-1 h-12 rounded-xl"
+                  />
+                </div>
+                <Button onClick={handleAddGoal} className="w-full h-12 rounded-xl text-[17px] font-semibold" disabled={addGoalMutation.isPending}>
+                  {addGoalMutation.isPending ? "Creating..." : "Create Goal"}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        }
+      />
 
-      <div className="max-w-md mx-auto px-4 mt-6 space-y-4">
+      <div className="max-w-lg mx-auto px-4 pt-4 space-y-4">
         {/* Stats */}
         <div className="grid grid-cols-2 gap-3">
           <Card className="p-4 bg-gradient-card border-0">
@@ -287,6 +284,8 @@ const Goals = () => {
           </p>
         </Card>
       </div>
+
+      <IOSTabBar />
     </div>
   );
 };

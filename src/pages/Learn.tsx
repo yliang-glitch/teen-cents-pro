@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, BookOpen, Award, TrendingUp, Lock, CheckCircle2, Zap } from "lucide-react";
+import { BookOpen, Award, TrendingUp, Lock, CheckCircle2, Zap, ChevronRight } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import { IOSHeader } from "@/components/IOSHeader";
+import { IOSTabBar } from "@/components/IOSTabBar";
 
 const Learn = () => {
   const [completedLessons] = useState([1, 2, 3]);
@@ -83,32 +84,23 @@ const Learn = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-20">
-      <header className="bg-gradient-primary text-primary-foreground p-6 rounded-b-3xl shadow-lg">
-        <div className="max-w-md mx-auto">
-          <Link to="/" className="inline-flex items-center gap-2 mb-4 hover:opacity-80 transition-opacity">
-            <ArrowLeft className="w-5 h-5" />
-            <span>Back</span>
-          </Link>
-          <h1 className="text-3xl font-bold">Learning Hub</h1>
-          <p className="text-sm opacity-90 mt-1">Master financial literacy</p>
-          
-          <div className="mt-4 bg-white/10 backdrop-blur-sm rounded-2xl p-4">
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-sm">Progress</span>
-              <span className="text-sm font-bold">
-                {stats.lessonsCompleted}/{stats.totalLessons} lessons
-              </span>
-            </div>
-            <Progress 
-              value={(stats.lessonsCompleted / stats.totalLessons) * 100} 
-              className="h-2"
-            />
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen bg-background pb-24 safe-area-inset">
+      <IOSHeader title="Learn" largeTitle showBack backPath="/" />
 
-      <div className="max-w-md mx-auto px-4 mt-6">
+      <div className="max-w-lg mx-auto px-4 pt-4">
+        {/* Progress Card */}
+        <Card className="p-4 rounded-2xl mb-6">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-[13px] text-muted-foreground font-medium">Progress</span>
+            <span className="text-[13px] font-semibold text-primary">
+              {stats.lessonsCompleted}/{stats.totalLessons} lessons
+            </span>
+          </div>
+          <Progress 
+            value={(stats.lessonsCompleted / stats.totalLessons) * 100} 
+            className="h-2"
+          />
+        </Card>
         {/* Stats Grid */}
         <div className="grid grid-cols-3 gap-3 mb-6">
           <Card className="p-4 text-center bg-gradient-card border-0">
@@ -218,20 +210,23 @@ const Learn = () => {
         </div>
 
         {/* Achievement Card */}
-        <Card className="mt-6 p-5 bg-gradient-accent border-0 text-accent-foreground">
+        <Card className="mt-6 p-4 rounded-2xl bg-primary border-0 text-primary-foreground">
           <div className="flex items-center gap-3">
-            <div className="bg-white/20 p-3 rounded-xl">
+            <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center">
               <Award className="w-6 h-6" />
             </div>
-            <div>
-              <h3 className="font-bold">Keep Learning!</h3>
-              <p className="text-sm opacity-90">
+            <div className="flex-1">
+              <h3 className="font-semibold text-[15px]">Keep Learning!</h3>
+              <p className="text-[13px] opacity-80">
                 Complete 2 more lessons to earn the "Quick Learner" badge!
               </p>
             </div>
+            <ChevronRight className="w-5 h-5 opacity-60" />
           </div>
         </Card>
       </div>
+
+      <IOSTabBar />
     </div>
   );
 };

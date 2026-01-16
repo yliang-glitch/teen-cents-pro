@@ -1,10 +1,11 @@
 import { useState, useMemo } from "react";
-import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, DollarSign, Coffee, ShoppingBag, Smartphone, Gamepad2, Pencil, Trash2, Search, Bitcoin, Coins } from "lucide-react";
+import { DollarSign, Coffee, ShoppingBag, Smartphone, Gamepad2, Pencil, Trash2, Search, Bitcoin, Coins, ChevronRight } from "lucide-react";
+import { IOSHeader } from "@/components/IOSHeader";
+import { IOSTabBar } from "@/components/IOSTabBar";
 import { toast } from "sonner";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
@@ -222,19 +223,10 @@ const Expenses = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-20">
-      <header className="bg-gradient-accent text-accent-foreground p-6 rounded-b-3xl shadow-lg">
-        <div className="max-w-md mx-auto">
-          <Link to="/" className="inline-flex items-center gap-2 mb-4 hover:opacity-80 transition-opacity">
-            <ArrowLeft className="w-5 h-5" />
-            <span>Back</span>
-          </Link>
-          <h1 className="text-3xl font-bold">Add Expense</h1>
-          <p className="text-sm opacity-90 mt-1">Track your spending wisely</p>
-        </div>
-      </header>
+    <div className="min-h-screen bg-background pb-24 safe-area-inset">
+      <IOSHeader title="Expenses" largeTitle showBack backPath="/" />
 
-      <div className="max-w-md mx-auto px-4 mt-6">
+      <div className="max-w-lg mx-auto px-4 pt-4">
         {/* Budget Alert */}
         <Card className="p-4 mb-6 bg-gradient-card border-0 shadow-md">
           <div className="flex justify-between items-center mb-2">
@@ -518,6 +510,8 @@ const Expenses = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <IOSTabBar />
     </div>
   );
 };
