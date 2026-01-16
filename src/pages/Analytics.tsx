@@ -1,7 +1,8 @@
-import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
-import { ArrowLeft, TrendingUp, TrendingDown, DollarSign } from "lucide-react";
+import { TrendingUp, TrendingDown, DollarSign } from "lucide-react";
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { IOSHeader } from "@/components/IOSHeader";
+import { IOSTabBar } from "@/components/IOSTabBar";
 
 const Analytics = () => {
   // Sample data for the last 7 days
@@ -46,19 +47,10 @@ const Analytics = () => {
   const netSavings = totalIncome - totalExpenses;
 
   return (
-    <div className="min-h-screen bg-background pb-20">
-      <header className="bg-gradient-primary text-primary-foreground p-6 rounded-b-3xl shadow-lg">
-        <div className="max-w-4xl mx-auto">
-          <Link to="/" className="inline-flex items-center gap-2 mb-4 hover:opacity-80 transition-opacity">
-            <ArrowLeft className="w-5 h-5" />
-            <span>Back</span>
-          </Link>
-          <h1 className="text-3xl font-bold">Analytics</h1>
-          <p className="text-sm opacity-90 mt-1">Your financial trends at a glance</p>
-        </div>
-      </header>
+    <div className="min-h-screen bg-background pb-24 safe-area-inset">
+      <IOSHeader title="Analytics" largeTitle showBack backPath="/" />
 
-      <div className="max-w-4xl mx-auto px-4 mt-6 space-y-6">
+      <div className="max-w-lg mx-auto px-4 pt-4 space-y-6">
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card className="p-4 bg-gradient-card border-0 shadow-md">
@@ -241,6 +233,8 @@ const Analytics = () => {
           </Card>
         </div>
       </div>
+
+      <IOSTabBar />
     </div>
   );
 };
