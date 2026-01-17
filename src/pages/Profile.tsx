@@ -1,7 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Award, Zap, TrendingUp, Target, Star, Trophy, Medal, Crown, LogOut, Edit, ChevronRight, ArrowLeft } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Award, Zap, TrendingUp, Target, Star, Trophy, Medal, Crown, LogOut, Edit, ChevronRight } from "lucide-react";
 import { IOSHeader } from "@/components/IOSHeader";
 import { IOSTabBar } from "@/components/IOSTabBar";
 import { Progress } from "@/components/ui/progress";
@@ -217,19 +216,21 @@ const Profile = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-background pb-20">
-      <header className="bg-gradient-primary text-primary-foreground p-6 rounded-b-3xl shadow-lg">
-        <div className="max-w-md mx-auto">
-          <Link to="/" className="inline-flex items-center gap-2 mb-4 hover:opacity-80 transition-opacity">
-            <ArrowLeft className="w-5 h-5" />
-            <span>Back</span>
-          </Link>
+    <div className="min-h-screen bg-background pb-24 safe-area-inset">
+      {/* iOS Large Title Header */}
+      <IOSHeader title="Profile" showBack />
+      
+      {/* Profile Header Card */}
+      <div className="max-w-lg mx-auto px-4 -mt-2">
+        <Card className="p-5 bg-primary text-primary-foreground rounded-2xl shadow-lg overflow-hidden relative">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-10 -mt-10" />
+          <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full -ml-8 -mb-8" />
           
-          <div className="text-center">
+          <div className="relative text-center">
             {loadingProfile ? (
               <>
                 <Skeleton className="w-20 h-20 rounded-full mx-auto mb-3 bg-white/20" />
-                <Skeleton className="h-8 w-32 mx-auto mb-2 bg-white/20" />
+                <Skeleton className="h-7 w-32 mx-auto mb-2 bg-white/20" />
                 <Skeleton className="h-4 w-40 mx-auto bg-white/20" />
               </>
             ) : (
@@ -241,32 +242,32 @@ const Profile = () => {
                     "👤"
                   )}
                 </div>
-                <h1 className="text-2xl font-bold">{profile.name}</h1>
-                <p className="text-sm opacity-90">Level {profile.level} Financial Rookie</p>
+                <h2 className="text-2xl font-bold">{profile.name}</h2>
+                <p className="text-[13px] opacity-80">Level {profile.level} Financial Rookie</p>
                 {profileData?.bio && (
-                  <p className="text-sm opacity-80 mt-2 max-w-xs mx-auto">{profileData.bio}</p>
+                  <p className="text-[13px] opacity-70 mt-2 max-w-xs mx-auto">{profileData.bio}</p>
                 )}
               </>
             )}
             
-            <div className="mt-4 bg-white/10 backdrop-blur-sm rounded-2xl p-4">
+            <div className="mt-4 bg-white/10 backdrop-blur-sm rounded-xl p-4">
               <div className="flex justify-between items-center mb-2">
-                <span className="text-sm">XP Progress</span>
-                <span className="text-sm font-bold">{profile.xp}/{profile.xpToNext}</span>
+                <span className="text-[13px] opacity-80">XP Progress</span>
+                <span className="text-[13px] font-semibold">{profile.xp}/{profile.xpToNext}</span>
               </div>
               <Progress value={(profile.xp / profile.xpToNext) * 100} className="h-2" />
-              <p className="text-xs mt-2 opacity-90">
+              <p className="text-[11px] mt-2 opacity-70">
                 {profile.xpToNext - profile.xp} XP to Level {profile.level + 1}
               </p>
             </div>
           </div>
-        </div>
-      </header>
+        </Card>
+      </div>
 
-      <div className="max-w-md mx-auto px-4 mt-6 space-y-6">
+      <div className="max-w-lg mx-auto px-4 mt-6 space-y-6">
         {/* Stats Grid */}
         <div>
-          <h2 className="text-lg font-bold mb-3">Your Stats</h2>
+          <h2 className="text-[13px] font-semibold text-muted-foreground uppercase tracking-wide mb-3 px-1">Your Stats</h2>
           <div className="grid grid-cols-2 gap-3">
             <Card className="p-4 bg-gradient-card border-0">
               <div className="flex items-center gap-2 text-success mb-1">
@@ -301,8 +302,8 @@ const Profile = () => {
 
         {/* Badges */}
         <div>
-          <h2 className="text-lg font-bold mb-3 flex items-center gap-2">
-            <Award className="w-5 h-5 text-primary" />
+          <h2 className="text-[13px] font-semibold text-muted-foreground uppercase tracking-wide mb-3 px-1 flex items-center gap-2">
+            <Award className="w-4 h-4" />
             Badges & Achievements
           </h2>
           <div className="grid grid-cols-3 gap-3">
@@ -334,8 +335,8 @@ const Profile = () => {
 
         {/* Recent Achievements */}
         <div>
-          <h2 className="text-lg font-bold mb-3">Recent Activity</h2>
-          <Card className="divide-y bg-gradient-card border-0">
+          <h2 className="text-[13px] font-semibold text-muted-foreground uppercase tracking-wide mb-3 px-1">Recent Activity</h2>
+          <div className="ios-grouped-list">
             {achievements.map((achievement) => (
               <div key={achievement.id} className="p-4 flex justify-between items-center">
                 <div>
@@ -350,7 +351,7 @@ const Profile = () => {
                 </div>
               </div>
             ))}
-          </Card>
+          </div>
         </div>
 
         {/* Settings Buttons */}
@@ -511,6 +512,8 @@ const Profile = () => {
           </Button>
         </div>
       </div>
+      
+      <IOSTabBar />
     </div>
   );
 };
