@@ -19,6 +19,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { IOSTabBar } from "@/components/IOSTabBar";
+import { FinancialInsights } from "@/components/FinancialInsights";
 
 const Index = () => {
   const { user } = useAuth();
@@ -366,6 +367,14 @@ const Index = () => {
             )}
           </div>
         </div>
+
+        {/* AI Financial Insights */}
+        <FinancialInsights 
+          userContext={totalBalance > 0 
+            ? `Balance: $${totalBalance.toFixed(2)}, Income: $${totalEarnings.toFixed(2)}, Expenses: $${totalSpent.toFixed(2)}` 
+            : undefined
+          } 
+        />
 
         {/* Learning Prompt - iOS Card */}
         <Link to="/learn" className="ios-press block">
