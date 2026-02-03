@@ -27,12 +27,56 @@ interface NewsItem {
   relatedLessonTitle: string | null;
 }
 
+const CACHE_KEY = "financial_news_cache";
+const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
+
+interface CachedNews {
+  news: NewsItem[];
+  timestamp: number;
+}
+
 export const FinancialNews = () => {
   const [news, setNews] = useState<NewsItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
+  const getCachedNews = (): NewsItem[] | null => {
+    try {
+      const cached = localStorage.getItem(CACHE_KEY);
+      if (cached) {
+        const { news, timestamp }: CachedNews = JSON.parse(cached);
+        if (Date.now() - timestamp < CACHE_DURATION) {
+          return news;
+        }
+      }
+    } catch {
+      // Ignore cache errors
+    }
+    return null;
+  };
+
+  const setCachedNews = (newsItems: NewsItem[]) => {
+    try {
+      localStorage.setItem(CACHE_KEY, JSON.stringify({
+        news: newsItems,
+        timestamp: Date.now(),
+      }));
+    } catch {
+      // Ignore cache errors
+    }
+  };
+
   const fetchNews = async (isRefresh = false) => {
+    // Use cache if available and not refreshing
+    if (!isRefresh) {
+      const cached = getCachedNews();
+      if (cached) {
+        setNews(cached);
+        setLoading(false);
+        return;
+      }
+    }
+
     if (isRefresh) {
       setRefreshing(true);
     } else {
@@ -46,10 +90,17 @@ export const FinancialNews = () => {
 
       if (data?.news) {
         setNews(data.news);
+        setCachedNews(data.news);
       }
     } catch (error: any) {
       console.error("Error fetching news:", error);
-      if (error.message?.includes("429")) {
+      // On rate limit, try to use stale cache
+      const staleCache = localStorage.getItem(CACHE_KEY);
+      if (staleCache) {
+        const { news: cachedNews }: CachedNews = JSON.parse(staleCache);
+        setNews(cachedNews);
+        toast.info("Showing cached news. Refresh later for updates.");
+      } else if (error.message?.includes("429")) {
         toast.error("Too many requests. Please wait a moment.");
       } else {
         toast.error("Couldn't load news. Try again later.");
