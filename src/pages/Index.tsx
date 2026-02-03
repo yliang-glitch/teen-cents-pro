@@ -20,6 +20,7 @@ import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { IOSTabBar } from "@/components/IOSTabBar";
 import { FinancialInsights } from "@/components/FinancialInsights";
+import { FinancialNews } from "@/components/FinancialNews";
 
 const Index = () => {
   const { user } = useAuth();
@@ -367,6 +368,9 @@ const Index = () => {
             )}
           </div>
         </div>
+
+        {/* Financial News */}
+        <FinancialNews />
 
         {/* AI Financial Insights */}
         <FinancialInsights 
