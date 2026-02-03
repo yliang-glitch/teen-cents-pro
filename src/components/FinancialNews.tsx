@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -8,8 +9,9 @@ import {
   Minus,
   Newspaper,
   RefreshCw,
-  ExternalLink,
-  Zap
+  Zap,
+  BookOpen,
+  ChevronRight
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -21,6 +23,8 @@ interface NewsItem {
   category: string;
   sentiment: "bullish" | "bearish" | "neutral";
   relatedTopic: string;
+  relatedLessonId: number | null;
+  relatedLessonTitle: string | null;
 }
 
 export const FinancialNews = () => {
@@ -145,7 +149,7 @@ export const FinancialNews = () => {
         {news.map((item) => (
           <Card 
             key={item.id} 
-            className="p-4 rounded-2xl ios-press transition-all hover:shadow-md"
+            className="p-4 rounded-2xl transition-all hover:shadow-md"
           >
             <div className="space-y-2">
               <div className="flex items-start gap-2">
@@ -172,6 +176,17 @@ export const FinancialNews = () => {
                   {item.relatedTopic}
                 </span>
               </div>
+
+              {item.relatedLessonId && (
+                <Link 
+                  to="/learn" 
+                  className="flex items-center gap-2 text-primary text-[13px] font-medium pl-10 pt-1 ios-press"
+                >
+                  <BookOpen className="w-3.5 h-3.5" />
+                  <span>Learn: {item.relatedLessonTitle}</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </Link>
+              )}
             </div>
           </Card>
         ))}
