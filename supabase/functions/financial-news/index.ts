@@ -12,7 +12,19 @@ interface NewsItem {
   category: string;
   sentiment: "bullish" | "bearish" | "neutral";
   relatedTopic: string;
+  relatedLessonId: number | null;
+  relatedLessonTitle: string | null;
 }
+
+const lessons = [
+  { id: 1, title: "Money Basics", keywords: ["money", "currency", "basics", "fundamentals", "cash", "dollar"] },
+  { id: 2, title: "Earning vs. Spending", keywords: ["income", "expenses", "spending", "earning", "salary", "wages", "paycheck"] },
+  { id: 3, title: "The Power of Saving", keywords: ["saving", "savings", "emergency fund", "piggy bank", "save", "accumulate"] },
+  { id: 4, title: "Setting Financial Goals", keywords: ["goals", "planning", "targets", "objectives", "milestones", "achieve"] },
+  { id: 5, title: "Budgeting Like a Pro", keywords: ["budget", "budgeting", "planning", "allocation", "expenses", "spending plan"] },
+  { id: 6, title: "Understanding Credit", keywords: ["credit", "loans", "debt", "credit score", "borrowing", "interest rate", "apr"] },
+  { id: 7, title: "Investing Basics", keywords: ["investing", "stocks", "bonds", "markets", "portfolio", "dividends", "returns", "etf", "mutual fund"] },
+];
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -48,6 +60,7 @@ Respond with a JSON array of exactly 4 news items. Each item should have:
 - category: one of "markets", "economy", "crypto", "banking", "investing", "personal-finance"
 - sentiment: "bullish" (positive/growing), "bearish" (negative/declining), or "neutral"
 - relatedTopic: the financial concept this teaches (e.g., "compound interest", "diversification", "inflation")
+- keywords: array of 2-3 keywords for matching to lessons
 
 IMPORTANT: Respond ONLY with the JSON array, no other text. Make the news feel current and relevant.`;
 
@@ -91,14 +104,50 @@ IMPORTANT: Respond ONLY with the JSON array, no other text. Make the news feel c
       throw new Error("No content in AI response");
     }
 
-    let news: NewsItem[];
+    let rawNews: any[];
     try {
       const cleanContent = content.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
-      news = JSON.parse(cleanContent);
+      rawNews = JSON.parse(cleanContent);
     } catch (parseError) {
       console.error("Failed to parse AI response:", content);
       throw new Error("Invalid response format from AI");
     }
+
+    // Map news to lessons
+    const news: NewsItem[] = rawNews.map((item: any) => {
+      const newsKeywords = item.keywords || [];
+      const newsText = `${item.headline} ${item.summary} ${item.relatedTopic}`.toLowerCase();
+      
+      let matchedLesson = null;
+      let maxScore = 0;
+      
+      for (const lesson of lessons) {
+        let score = 0;
+        for (const keyword of lesson.keywords) {
+          if (newsText.includes(keyword.toLowerCase())) {
+            score++;
+          }
+          if (newsKeywords.some((k: string) => k.toLowerCase().includes(keyword.toLowerCase()))) {
+            score += 2;
+          }
+        }
+        if (score > maxScore) {
+          maxScore = score;
+          matchedLesson = lesson;
+        }
+      }
+
+      return {
+        id: item.id,
+        headline: item.headline,
+        summary: item.summary,
+        category: item.category,
+        sentiment: item.sentiment,
+        relatedTopic: item.relatedTopic,
+        relatedLessonId: matchedLesson?.id || null,
+        relatedLessonTitle: matchedLesson?.title || null,
+      };
+    });
 
     return new Response(JSON.stringify({ news }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
