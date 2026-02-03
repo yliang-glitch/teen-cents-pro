@@ -93,7 +93,7 @@ export const FinancialInsights = ({ userContext }: FinancialInsightsProps) => {
 
   if (loading) {
     return (
-      <div className="space-y-3">
+      <div className="space-y-2">
         <div className="flex items-center justify-between px-1">
           <div className="flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-primary" />
@@ -102,24 +102,20 @@ export const FinancialInsights = ({ userContext }: FinancialInsightsProps) => {
             </h2>
           </div>
         </div>
-        {[1, 2, 3].map((i) => (
-          <Card key={i} className="p-4 rounded-2xl">
-            <div className="flex gap-3">
-              <Skeleton className="w-10 h-10 rounded-full flex-shrink-0" />
-              <div className="flex-1 space-y-2">
-                <Skeleton className="h-4 w-3/4" />
-                <Skeleton className="h-3 w-full" />
-                <Skeleton className="h-3 w-1/2" />
-              </div>
-            </div>
-          </Card>
-        ))}
+        <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
+          {[1, 2, 3].map((i) => (
+            <Card key={i} className="p-3 rounded-xl min-w-[240px] flex-shrink-0">
+              <Skeleton className="h-4 w-full mb-2" />
+              <Skeleton className="h-3 w-3/4" />
+            </Card>
+          ))}
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       <div className="flex items-center justify-between px-1">
         <div className="flex items-center gap-2">
           <Sparkles className="w-4 h-4 text-primary" />
@@ -132,61 +128,66 @@ export const FinancialInsights = ({ userContext }: FinancialInsightsProps) => {
           size="sm"
           onClick={() => fetchInsights(true)}
           disabled={refreshing}
-          className="text-primary h-8 px-2"
+          className="text-primary h-7 px-2"
         >
-          <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
+          <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? "animate-spin" : ""}`} />
         </Button>
       </div>
 
-      <div className="ios-grouped-list">
+      <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
         {insights.map((insight) => (
-          <div key={insight.id} className="ios-list-item flex-col items-start gap-3">
-            <div className="flex items-start gap-3 w-full">
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
-                insight.impact === "positive" 
-                  ? "bg-success/10" 
-                  : insight.impact === "negative" 
-                  ? "bg-destructive/10" 
-                  : "bg-accent/10"
-              }`}>
-                {getImpactIcon(insight.impact)}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-start justify-between gap-2 mb-1">
-                  <h3 className="font-semibold text-[15px] leading-tight">{insight.title}</h3>
-                  <span className={`text-[11px] px-2 py-0.5 rounded-full flex-shrink-0 ${getCategoryColor(insight.category)}`}>
-                    {insight.category}
-                  </span>
+          <Card 
+            key={insight.id} 
+            className="p-3 rounded-xl min-w-[240px] flex-shrink-0 transition-all hover:shadow-md"
+          >
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-2">
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${
+                  insight.impact === "positive" 
+                    ? "bg-success/10" 
+                    : insight.impact === "negative" 
+                    ? "bg-destructive/10" 
+                    : "bg-accent/10"
+                }`}>
+                  {getImpactIcon(insight.impact)}
                 </div>
-                <p className="text-[13px] text-muted-foreground leading-snug">
-                  {insight.summary}
-                </p>
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${getCategoryColor(insight.category)}`}>
+                  {insight.category}
+                </span>
               </div>
+              
+              <h3 className="font-semibold text-[13px] leading-tight line-clamp-2">
+                {insight.title}
+              </h3>
+              
+              <p className="text-[11px] text-muted-foreground leading-snug line-clamp-2">
+                {insight.summary}
+              </p>
+
+              {insight.relatedLessonId && (
+                <Link 
+                  to="/learn" 
+                  className="flex items-center gap-1 text-primary text-[11px] font-medium ios-press"
+                >
+                  <BookOpen className="w-3 h-3" />
+                  <span className="truncate">{insight.relatedLessonTitle}</span>
+                  <ChevronRight className="w-3 h-3 flex-shrink-0" />
+                </Link>
+              )}
             </div>
-            
-            {insight.relatedLessonId && (
-              <Link 
-                to="/learn" 
-                className="flex items-center gap-2 text-primary text-[13px] font-medium ml-13 ios-press"
-              >
-                <BookOpen className="w-3.5 h-3.5" />
-                <span>Learn more: {insight.relatedLessonTitle}</span>
-                <ChevronRight className="w-3.5 h-3.5" />
-              </Link>
-            )}
-          </div>
+          </Card>
         ))}
       </div>
 
       {insights.length === 0 && !loading && (
-        <Card className="p-6 rounded-2xl text-center">
-          <Lightbulb className="w-10 h-10 mx-auto mb-2 text-muted-foreground" />
-          <p className="text-[15px] text-muted-foreground">No insights available</p>
+        <Card className="p-4 rounded-xl text-center">
+          <Lightbulb className="w-8 h-8 mx-auto mb-1 text-muted-foreground" />
+          <p className="text-[13px] text-muted-foreground">No insights available</p>
           <Button
             variant="outline"
             size="sm"
             onClick={() => fetchInsights(true)}
-            className="mt-3"
+            className="mt-2"
           >
             Try Again
           </Button>

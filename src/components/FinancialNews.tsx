@@ -151,7 +151,7 @@ export const FinancialNews = () => {
 
   if (loading) {
     return (
-      <div className="space-y-3">
+      <div className="space-y-2">
         <div className="flex items-center justify-between px-1">
           <div className="flex items-center gap-2">
             <Newspaper className="w-4 h-4 text-primary" />
@@ -160,24 +160,20 @@ export const FinancialNews = () => {
             </h2>
           </div>
         </div>
-        {[1, 2, 3, 4].map((i) => (
-          <Card key={i} className="p-4 rounded-2xl">
-            <div className="space-y-2">
-              <Skeleton className="h-4 w-full" />
+        <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
+          {[1, 2, 3].map((i) => (
+            <Card key={i} className="p-3 rounded-xl min-w-[260px] flex-shrink-0">
+              <Skeleton className="h-4 w-full mb-2" />
               <Skeleton className="h-3 w-3/4" />
-              <div className="flex gap-2">
-                <Skeleton className="h-5 w-16 rounded-full" />
-                <Skeleton className="h-5 w-20 rounded-full" />
-              </div>
-            </div>
-          </Card>
-        ))}
+            </Card>
+          ))}
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       <div className="flex items-center justify-between px-1">
         <div className="flex items-center gap-2">
           <Newspaper className="w-4 h-4 text-primary" />
@@ -190,52 +186,44 @@ export const FinancialNews = () => {
           size="sm"
           onClick={() => fetchNews(true)}
           disabled={refreshing}
-          className="text-primary h-8 px-2"
+          className="text-primary h-7 px-2"
         >
-          <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
+          <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? "animate-spin" : ""}`} />
         </Button>
       </div>
 
-      <div className="space-y-2">
+      <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
         {news.map((item) => (
           <Card 
             key={item.id} 
-            className="p-4 rounded-2xl transition-all hover:shadow-md"
+            className="p-3 rounded-xl min-w-[260px] flex-shrink-0 transition-all hover:shadow-md"
           >
-            <div className="space-y-2">
-              <div className="flex items-start gap-2">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${getSentimentBg(item.sentiment)}`}>
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-2">
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${getSentimentBg(item.sentiment)}`}>
                   {getSentimentIcon(item.sentiment)}
                 </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-[15px] leading-tight line-clamp-2">
-                    {item.headline}
-                  </h3>
-                </div>
-              </div>
-              
-              <p className="text-[13px] text-muted-foreground leading-snug pl-10">
-                {item.summary}
-              </p>
-              
-              <div className="flex items-center gap-2 pl-10 flex-wrap">
-                <span className={`text-[11px] px-2 py-0.5 rounded-full ${getCategoryColor(item.category)}`}>
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${getCategoryColor(item.category)}`}>
                   {item.category}
                 </span>
-                <span className="text-[11px] px-2 py-0.5 rounded-full bg-primary/5 text-primary flex items-center gap-1">
-                  <Zap className="w-3 h-3" />
-                  {item.relatedTopic}
-                </span>
               </div>
+              
+              <h3 className="font-semibold text-[13px] leading-tight line-clamp-2">
+                {item.headline}
+              </h3>
+              
+              <p className="text-[11px] text-muted-foreground leading-snug line-clamp-2">
+                {item.summary}
+              </p>
 
               {item.relatedLessonId && (
                 <Link 
                   to="/learn" 
-                  className="flex items-center gap-2 text-primary text-[13px] font-medium pl-10 pt-1 ios-press"
+                  className="flex items-center gap-1 text-primary text-[11px] font-medium ios-press"
                 >
-                  <BookOpen className="w-3.5 h-3.5" />
-                  <span>Learn: {item.relatedLessonTitle}</span>
-                  <ChevronRight className="w-3.5 h-3.5" />
+                  <BookOpen className="w-3 h-3" />
+                  <span className="truncate">{item.relatedLessonTitle}</span>
+                  <ChevronRight className="w-3 h-3 flex-shrink-0" />
                 </Link>
               )}
             </div>
@@ -244,14 +232,14 @@ export const FinancialNews = () => {
       </div>
 
       {news.length === 0 && !loading && (
-        <Card className="p-6 rounded-2xl text-center">
-          <Newspaper className="w-10 h-10 mx-auto mb-2 text-muted-foreground" />
-          <p className="text-[15px] text-muted-foreground">No news available</p>
+        <Card className="p-4 rounded-xl text-center">
+          <Newspaper className="w-8 h-8 mx-auto mb-1 text-muted-foreground" />
+          <p className="text-[13px] text-muted-foreground">No news available</p>
           <Button
             variant="outline"
             size="sm"
             onClick={() => fetchNews(true)}
-            className="mt-3"
+            className="mt-2"
           >
             Try Again
           </Button>
