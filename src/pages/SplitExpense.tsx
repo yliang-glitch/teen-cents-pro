@@ -5,6 +5,7 @@
  import { Label } from "@/components/ui/label";
  import { Textarea } from "@/components/ui/textarea";
  import { DollarSign, Users, Plus, Trash2, Receipt, Upload, Check, Clock, ChevronRight, Image } from "lucide-react";
+import { Divide } from "lucide-react";
  import { IOSHeader } from "@/components/IOSHeader";
  import { IOSTabBar } from "@/components/IOSTabBar";
  import { toast } from "sonner";
@@ -69,6 +70,7 @@
    const [uploading, setUploading] = useState(false);
    const [selectedSplit, setSelectedSplit] = useState<SplitExpense | null>(null);
    const [deletingSplitId, setDeletingSplitId] = useState<string | null>(null);
+  const [splitTotal, setSplitTotal] = useState("");
  
    // Fetch split expenses
    const { data: splitExpenses, isLoading } = useQuery({
@@ -274,6 +276,26 @@
      setParticipants(updated);
    };
  
+  const splitEvenly = () => {
+    const total = parseFloat(splitTotal);
+    if (!total || total <= 0) {
+      toast.error("Enter a total amount to split");
+      return;
+    }
+    const participantsWithNames = participants.filter((p) => p.name.trim());
+    if (participantsWithNames.length < 2) {
+      toast.error("Add at least 2 participant names first");
+      return;
+    }
+    const perPerson = (total / participantsWithNames.length).toFixed(2);
+    const updated = participants.map((p) => ({
+      ...p,
+      amount: p.name.trim() ? perPerson : "",
+    }));
+    setParticipants(updated);
+    toast.success(`Split $${total.toFixed(2)} evenly ($${perPerson} each)`);
+  };
+
    const totalAmount = participants.reduce(
      (sum, p) => sum + (parseFloat(p.amount) || 0),
      0
@@ -410,6 +432,33 @@
                  </Button>
                </div>
  
+              {/* Even Split Section */}
+              <div className="mb-4 p-3 bg-muted/50 rounded-lg">
+                <p className="text-sm font-medium mb-2">Quick Split</p>
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <DollarSign className="absolute left-2 top-2.5 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      type="number"
+                      step="0.01"
+                      placeholder="Total amount"
+                      value={splitTotal}
+                      onChange={(e) => setSplitTotal(e.target.value)}
+                      className="pl-7"
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={splitEvenly}
+                    className="shrink-0"
+                  >
+                    <Divide className="w-4 h-4 mr-1" />
+                    Split Evenly
+                  </Button>
+                </div>
+              </div>
+
                <div className="space-y-3">
                  {participants.map((participant, index) => (
                    <div key={index} className="flex gap-2 items-center">
