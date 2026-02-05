@@ -125,6 +125,80 @@ export type Database = {
         }
         Relationships: []
       }
+      split_expenses: {
+        Row: {
+          category: string
+          created_at: string
+          description: string | null
+          id: string
+          receipt_url: string | null
+          status: string
+          title: string
+          total_amount: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          receipt_url?: string | null
+          status?: string
+          title: string
+          total_amount: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          receipt_url?: string | null
+          status?: string
+          title?: string
+          total_amount?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      split_participants: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          is_paid: boolean
+          participant_name: string
+          split_expense_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          is_paid?: boolean
+          participant_name: string
+          split_expense_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          is_paid?: boolean
+          participant_name?: string
+          split_expense_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "split_participants_split_expense_id_fkey"
+            columns: ["split_expense_id"]
+            isOneToOne: false
+            referencedRelation: "split_expenses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

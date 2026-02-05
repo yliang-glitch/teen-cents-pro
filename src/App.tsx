@@ -11,6 +11,7 @@ import Goals from "./pages/Goals";
 import Learn from "./pages/Learn";
 import Profile from "./pages/Profile";
 import Analytics from "./pages/Analytics";
+import SplitExpense from "./pages/SplitExpense";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -31,6 +32,7 @@ const App = () => (
           <Route path="/learn" element={<ProtectedRoute><Learn /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
           <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
+          <Route path="/split" element={<ProtectedRoute><SplitExpense /></ProtectedRoute>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

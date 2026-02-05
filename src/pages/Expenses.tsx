@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { DollarSign, Coffee, ShoppingBag, Smartphone, Gamepad2, Pencil, Trash2, Search, Bitcoin, Coins, ChevronRight } from "lucide-react";
+import { Users } from "lucide-react";
+import { Link } from "react-router-dom";
 import { IOSHeader } from "@/components/IOSHeader";
 import { IOSTabBar } from "@/components/IOSTabBar";
 import { toast } from "sonner";
@@ -228,6 +230,24 @@ const Expenses = () => {
 
       <div className="max-w-lg mx-auto px-4 pt-4">
         {/* Budget Alert */}
+        {/* Split Expense Quick Access */}
+        <Link to="/split">
+          <Card className="p-4 mb-4 bg-primary/5 border-primary/20 hover:bg-primary/10 transition-colors cursor-pointer">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="bg-primary/10 p-2 rounded-xl">
+                  <Users className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <p className="font-semibold">Split an Expense</p>
+                  <p className="text-xs text-muted-foreground">Share costs with friends</p>
+                </div>
+              </div>
+              <ChevronRight className="w-5 h-5 text-muted-foreground" />
+            </div>
+          </Card>
+        </Link>
+
         <Card className="p-4 mb-6 bg-gradient-card border-0 shadow-md">
           <div className="flex justify-between items-center mb-2">
             <span className="text-sm font-semibold">Monthly Budget</span>
