@@ -16,6 +16,7 @@ import {
   DollarSign, Briefcase, Gift, TrendingUp, Pencil, Trash2, Search,
   Bitcoin, Coins, ChevronRight, ShoppingBag, Video, Baby, GraduationCap,
   Gamepad2, MoreHorizontal, Camera, StickyNote, Flame, ArrowDownUp,
+  Zap,
 } from "lucide-react";
 import { IOSHeader } from "@/components/IOSHeader";
 import { IOSTabBar } from "@/components/IOSTabBar";
@@ -122,6 +123,35 @@ const Income = () => {
     }
     return logs;
   }, [recentIncome, hustleFilter]);
+
+  // Weekly streak tracker - consecutive days with hustle income
+  const streakData = useMemo(() => {
+    if (!recentIncome) return { streak: 0, weekDays: [] as { label: string; active: boolean; isToday: boolean }[] };
+    const hustleDates = new Set(
+      recentIncome
+        .filter((i: any) => i.category === "gig")
+        .map((i: any) => new Date(i.created_at).toDateString())
+    );
+    let streak = 0;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    let checkDate = new Date(today);
+    if (!hustleDates.has(checkDate.toDateString())) {
+      checkDate.setDate(checkDate.getDate() - 1);
+    }
+    while (hustleDates.has(checkDate.toDateString())) {
+      streak++;
+      checkDate.setDate(checkDate.getDate() - 1);
+    }
+    const weekDays: { label: string; active: boolean; isToday: boolean }[] = [];
+    const dayLabels = ["S", "M", "T", "W", "T", "F", "S"];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      weekDays.push({ label: dayLabels[d.getDay()], active: hustleDates.has(d.toDateString()), isToday: i === 0 });
+    }
+    return { streak, weekDays };
+  }, [recentIncome]);
 
   const fireConfetti = () => {
     confetti({
@@ -499,7 +529,48 @@ const Income = () => {
               </div>
             </Card>
 
-            {/* Filter Chips */}
+            {/* Weekly Streak Tracker */}
+            <Card className="p-4 border border-teal/20 mb-4 overflow-hidden">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Zap className="w-5 h-5 text-teal" />
+                  <p className="text-sm font-bold">Hustle Streak</p>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-2xl font-black text-teal">{streakData.streak}</span>
+                  <span className="text-xs text-muted-foreground font-medium">
+                    {streakData.streak === 1 ? "day" : "days"}
+                  </span>
+                </div>
+              </div>
+              <div className="flex justify-between gap-1">
+                {streakData.weekDays.map((day, i) => (
+                  <div key={i} className="flex flex-col items-center gap-1.5 flex-1">
+                    <div
+                      className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
+                        day.active
+                          ? "bg-teal text-teal-foreground shadow-md"
+                          : day.isToday
+                          ? "border-2 border-teal/40 text-teal"
+                          : "bg-muted text-muted-foreground"
+                      }`}
+                    >
+                      {day.active ? "🔥" : day.label}
+                    </div>
+                    <span className={`text-[10px] font-medium ${day.isToday ? "text-teal" : "text-muted-foreground"}`}>
+                      {day.isToday ? "Today" : day.label}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              {streakData.streak >= 3 && (
+                <p className="text-xs text-teal font-semibold text-center mt-3">
+                  {streakData.streak >= 7 ? "🏆 Legendary week! Keep dominating!" : "🔥 You're on fire! Don't break the streak!"}
+                </p>
+              )}
+            </Card>
+
+
             <div className="flex gap-2 overflow-x-auto pb-2 mb-3 scrollbar-hide">
               <button
                 onClick={() => setHustleFilter(null)}
