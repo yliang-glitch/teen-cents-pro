@@ -72,24 +72,36 @@ export type Database = {
         Row: {
           amount: number
           category: string
+          cost: number | null
           created_at: string
+          hustle_type: string | null
           id: string
+          note: string | null
+          screenshot_url: string | null
           title: string
           user_id: string
         }
         Insert: {
           amount: number
           category: string
+          cost?: number | null
           created_at?: string
+          hustle_type?: string | null
           id?: string
+          note?: string | null
+          screenshot_url?: string | null
           title: string
           user_id: string
         }
         Update: {
           amount?: number
           category?: string
+          cost?: number | null
           created_at?: string
+          hustle_type?: string | null
           id?: string
+          note?: string | null
+          screenshot_url?: string | null
           title?: string
           user_id?: string
         }

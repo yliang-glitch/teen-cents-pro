@@ -39,6 +39,9 @@
     --warning: 36 100% 50%;
     --warning-foreground: 0 0% 0%;
 
+    --teal: 174 72% 46%;
+    --teal-foreground: 0 0% 100%;
+
     --border: 240 6% 90%;
     --input: 240 6% 90%;
     --ring: 211 100% 50%;
@@ -103,6 +106,9 @@
     
     --warning: 36 100% 50%;
     --warning-foreground: 0 0% 0%;
+
+    --teal: 174 72% 56%;
+    --teal-foreground: 0 0% 0%;
 
     --border: 240 4% 16%;
     --input: 240 4% 16%;
